@@ -9,8 +9,6 @@ class FooBar {
 private:
     int n;
     bool turnFoo = true;
-    mutex m;
-    condition_variable cv;
 
 public:
     FooBar(int n) {
@@ -18,24 +16,22 @@ public:
     }
 
     void foo(function<void()> printFoo) {
-        unique_lock<mutex> lk(m);
         for (int i = 0; i < n; i++) {
+            while (!turnFoo)
+                this_thread::yield();
         	// printFoo() outputs "foo". Do not change or remove this line.
-            cv.wait(lk, [this] { return this->turnFoo; });
         	printFoo();
             turnFoo = false;
-            cv.notify_one();
         }
     }
 
     void bar(function<void()> printBar) {
-        unique_lock<mutex> lk(m);
         for (int i = 0; i < n; i++) {
+            while (turnFoo)
+                this_thread::yield();
         	// printBar() outputs "bar". Do not change or remove this line.
-            cv.wait(lk, [this] { return !this->turnFoo; });
         	printBar();
             turnFoo = true;
-            cv.notify_one();
         }
     }
 };
